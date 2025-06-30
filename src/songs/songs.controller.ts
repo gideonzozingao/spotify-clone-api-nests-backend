@@ -7,20 +7,13 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Scope,
 } from '@nestjs/common';
 import { SongsService } from './songs.service';
 import { CreateSongDTo } from './dto/create-song-dto';
 import { UpdateteSongDTO } from './dto/update-song-dto';
 
-// DTO for updating songs
-// export class UpdateSongDto {
-//   title?: string;
-//   artist?: string;
-//   duration?: number;
-//   genre?: string;
-// }
-
-@Controller('songs')
+@Controller({ path: 'songs', scope: Scope.REQUEST })
 export class SongsController {
   constructor(private songsService: SongsService) {}
 
@@ -31,12 +24,20 @@ export class SongsController {
 
   @Get()
   findAll() {
-    return this.songsService.findAll();
+    try {
+      return this.songsService.findAll();
+    } catch (error) {
+      console.log('I am in the catch block', error);
+    }
   }
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.songsService.findOne(id);
+    try {
+      return this.songsService.findOne(id);
+    } catch (error) {
+      console.log('I am in the catch block', error);
+    }
   }
 
   @Put(':id')
@@ -44,11 +45,19 @@ export class SongsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSongDto: UpdateteSongDTO,
   ) {
-    return this.songsService.update(id, updateSongDto);
+    try {
+      return this.songsService.update(id, updateSongDto);
+    } catch (error) {
+      console.log('I am in the catch block', error);
+    }
   }
 
   @Delete(':id')
   delete(@Param('id', ParseIntPipe) id: number) {
-    return this.songsService.remove(id);
+    try {
+      return this.songsService.remove(id);
+    } catch (error) {
+      console.log('I am in the catch block', error);
+    }
   }
 }
