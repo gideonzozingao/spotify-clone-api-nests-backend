@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateSongDTo } from './dto/create-song-dto';
 import { UpdateteSongDTO } from './dto/update-song-dto';
 
-// Song interface
 export interface Song {
   id: number;
   title: string;
@@ -11,8 +10,6 @@ export interface Song {
   genre?: string;
   releaseDate?: Date;
 }
-
-// DTOs
 
 @Injectable()
 export class SongsService {
@@ -29,7 +26,6 @@ export class SongsService {
   }
 
   findAll(): Song[] {
-    // throw new Error('Error in DB while fetching records');
     return this.songs;
   }
 
