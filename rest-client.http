@@ -1,0 +1,13 @@
+
+##
+GET http://localhost:3032/
+
+
+##
+GET http://localhost:3032/songs
+
+GET http://localhost:3032/songs/1
+
+PUT http://localhost:3032/songs/1
+
+DELETE GET http://localhost:3032/songs/1
