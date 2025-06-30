@@ -13,7 +13,7 @@ import {
 import { SongsService } from './songs.service';
 import { CreateSongDTo } from './dto/create-song-dto';
 import { UpdateteSongDTO } from './dto/update-song-dto';
-import { Connection, connection } from '../common/constants/connection';
+import { Connection } from '../common/constants/connection';
 
 @Controller({ path: 'songs', scope: Scope.REQUEST })
 export class SongsController {

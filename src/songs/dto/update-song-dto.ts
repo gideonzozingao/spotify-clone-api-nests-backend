@@ -4,9 +4,17 @@ import {
   IsMilitaryTime,
   IsNotEmpty,
   IsString,
+  IsInt,
 } from 'class-validator';
 
 export class UpdateteSongDTO {
+  @IsInt()
+  @IsNotEmpty()
+  readonly id: number;
+
+  @IsInt()
+  @IsNotEmpty()
+  readonly artistId: number;
   @IsString()
   @IsNotEmpty()
   readonly title: string;

@@ -1,63 +1,121 @@
+// src/services/song.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateSongDTo } from './dto/create-song-dto';
-import { UpdateteSongDTO } from './dto/update-song-dto';
-
-export interface Song {
-  id: number;
-  title: string;
-  artist: string[];
-  duration?: Date;
-  genre?: string;
-  releaseDate?: Date;
-}
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Song } from '../entities/song.entity';
+import { CreateSongDto } from '../dto/create-song.dto';
+import { Artist } from '../entities/artist.entity';
+import { Album } from '../entities/album.entity';
 
 @Injectable()
 export class SongsService {
-  private readonly songs: Song[] = [];
-  private idCounter = 1;
+  constructor(
+    @InjectRepository(Song)
+    private songRepository: Repository<Song>,
+    @InjectRepository(Artist)
+    private artistRepository: Repository<Artist>,
+    @InjectRepository(Album)
+    private albumRepository: Repository<Album>,
+  ) {}
 
-  create(createSongDto: CreateSongDTo): Song {
-    const newSong: Song = {
-      id: this.idCounter++,
-      ...createSongDto,
-    };
-    this.songs.push(newSong);
-    return newSong;
-  }
+  async create(createSongDto: CreateSongDto): Promise<Song> {
+    const artist = await this.artistRepository.findOne({
+      where: { id: createSongDto.artistId },
+    });
 
-  findAll(): Song[] {
-    return this.songs;
-  }
-
-  findOne(id: number): Song {
-    const song = this.songs.find((song) => song.id === id);
-    if (!song) {
-      throw new NotFoundException(`Song with ID ${id} not found`);
+    if (!artist) {
+      throw new NotFoundException('Artist not found');
     }
+
+    let album = null;
+    if (createSongDto.albumId) {
+      album = await this.albumRepository.findOne({
+        where: { id: createSongDto.albumId },
+      });
+
+      if (!album) {
+        throw new NotFoundException('Album not found');
+      }
+    }
+
+    const song = this.songRepository.create({
+      ...createSongDto,
+      artist,
+      album,
+    });
+
+    return this.songRepository.save(song);
+  }
+
+  async findAll(): Promise<Song[]> {
+    return this.songRepository.find({
+      where: { isPublic: true },
+      relations: ['artist', 'album'],
+    });
+  }
+
+  async findOne(id: number): Promise<Song> {
+    const song = await this.songRepository.findOne({
+      where: { id },
+      relations: ['artist', 'album', 'likedBy'],
+    });
+
+    if (!song) {
+      throw new NotFoundException('Song not found');
+    }
+
     return song;
   }
 
-  update(id: number, updateSongDto: UpdateteSongDTO): Song {
-    const songIndex = this.songs.findIndex((song) => song.id === id);
-    if (songIndex === -1) {
-      throw new NotFoundException(`Song with ID ${id} not found`);
-    }
-
-    this.songs[songIndex] = {
-      ...this.songs[songIndex],
-      ...updateSongDto,
-    };
-
-    return this.songs[songIndex];
+  async findByArtist(artistId: number): Promise<Song[]> {
+    return this.songRepository.find({
+      where: { artist: { id: artistId }, isPublic: true },
+      relations: ['artist', 'album'],
+    });
   }
 
-  remove(id: number): { message: string } {
-    const songIndex = this.songs.findIndex((song) => song.id === id);
-    if (songIndex === -1) {
-      throw new NotFoundException(`Song with ID ${id} not found`);
-    }
+  async findByAlbum(albumId: number): Promise<Song[]> {
+    return this.songRepository.find({
+      where: { album: { id: albumId } },
+      relations: ['artist', 'album'],
+      order: { id: 'ASC' },
+    });
+  }
 
-    this.songs.splice(songIndex, 1);
-    return { message: `Song with ID ${id} has been deleted` };
+  async update(id: number, updateData: Partial<Song>): Promise<Song> {
+    await this.songRepository.update(id, updateData);
+    return this.findOne(id);
+  }
+
+  async remove(id: number): Promise<void> {
+    const song = await this.findOne(id);
+    await this.songRepository.remove(song);
+  }
+
+  async incrementPlayCount(id: number): Promise<Song> {
+    await this.songRepository.increment({ id }, 'playCount', 1);
+    return this.findOne(id);
+  }
+
+  async getPopularSongs(limit: number = 50): Promise<Song[]> {
+    return this.songRepository.find({
+      where: { isPublic: true },
+      order: { playCount: 'DESC' },
+      take: limit,
+      relations: ['artist', 'album'],
+    });
+  }
+
+  async searchSongs(query: string): Promise<Song[]> {
+    return this.songRepository
+      .createQueryBuilder('song')
+      .leftJoinAndSelect('song.artist', 'artist')
+      .leftJoinAndSelect('song.album', 'album')
+      .where('song.isPublic = true')
+      .andWhere(
+        '(song.title ILIKE :query OR artist.name ILIKE :query OR album.title ILIKE :query)',
+        { query: `%${query}%` },
+      )
+      .getMany();
   }
 }

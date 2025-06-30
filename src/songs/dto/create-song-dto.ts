@@ -1,12 +1,21 @@
 import {
   IsArray,
   IsDateString,
+  IsInt,
   IsMilitaryTime,
   IsNotEmpty,
   IsString,
 } from 'class-validator';
 
 export class CreateSongDTo {
+  @IsInt()
+  @IsNotEmpty()
+  readonly id: number;
+
+  @IsInt()
+  @IsNotEmpty()
+  readonly artistId: number;
+
   @IsString()
   @IsNotEmpty()
   readonly title: string;
